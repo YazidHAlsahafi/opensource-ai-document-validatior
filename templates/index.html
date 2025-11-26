@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://fonts.googleapis.com/css?family=Cairo' rel='stylesheet'>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Document</title>
+    <style>
+body { font-family: 'Cairo'; max-width: 600px; margin: 40px auto; font-weight:bold; }
+#result { margin-top: 20px; }
+.valid { color: green; font-weight: bold; }
+.invalid { color: red; font-weight: bold; }
+#loading{ animation: load 2s infinite; }
+@keyframes load {
+    0% {opacity:0.5;}
+    50% {opacity: 1;}
+    100% {opacity: 0.5;}
+}
+#extra{ display: none; transition: height 1s;}
+  label.files {
+    border: 1px solid #000000;
+    background-color: #2a5bd5;
+    border-radius: 10px;
+    padding: 5px 20px;
+    transition: .5s;
+    width: 20%;
+    height: 0.1%;    text-align: center;
+    display: inline-block;
+    color: white;
+  }
+
+  label.files:hover {
+    background-color: #2249ac;
+    cursor: pointer;
+  }
+  .background{
+    display: none;
+  }
+  .slidecontainer {
+  width: 100%; 
+}
+.slider:hover {
+  opacity: 1; 
+}
+
+.slider {
+  -webkit-appearance: none;  
+  appearance: none;
+  width: 75%; 
+  height: 25px; 
+  background: #d3d3d3; 
+  outline: none; 
+  opacity: 0.7; 
+  -webkit-transition: .2s; 
+  transition: opacity .2s;
+  border-radius: 10px;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; 
+  appearance: none;
+  width: 25px; 
+  height: 25px; 
+  background: #2a5bd5; 
+  cursor: pointer; 
+  border-radius: 10px;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px; 
+  height: 25px; 
+  background: #2a5bd5; 
+  cursor: pointer; 
+  border-radius: 10px;
+}
+#more{
+background: none;
+text-decoration: underline;
+font-family: 'Cairo';
+font-weight: bold;
+color: blue;
+border: none;
+cursor: pointer;
+}
+#send{
+font-family: 'Cairo';
+font-weight: bold;
+background: none;
+border: 1px solid;
+border-color: #e59d20;
+border-radius: 10px;
+padding: 5px 20px;
+transition: .5s;
+width: 20%;
+display: inline-block;
+}
+#send:hover{
+  background-color: #e59d20;
+  color: white;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+    <h2 dir="rtl">موثق وثيقات المشاريع</h2>
+
+    <form id="uploadForm" dir="rtl">
+
+    <label>ارفع المستند المراد التحقق منه:</label>
+    <br>
+    <label class="files" for="document">اختيار ملف</label><br>
+    <label id="file1">files</label><br>
+    <input type="file" name="document" id="document" class="background" required>
+
+    <button onclick="showExtra()" type="button" id="more">مزيد ></button>
+    <div id="extra">
+    <label>اكتب متطلبات التحقق هنا:</label><br>
+    <textarea name="requirements" rows="6" cols="60" style="font-family: 'Cairo'; font-weight: bold;" required></textarea><br><br>
+
+
+    <label>أمثلة صحيحة (اختياري):</label><br>
+    <label class="files" for="valid_examples">اختيار ملف</label><br>
+    <label id="file2">files</label><br>
+    <input type="file" name="valid_examples" id="valid_examples" class="background" multiple>
+
+    <label>أمثلة غير صحيحة (اختياري):</label><br>
+    <label class="files" for="invalid_examples">اختيار ملف</label><br>
+    <label id="file3">files</label><br>
+    <input type="file" name="invalid_examples" id="invalid_examples" class="background" multiple>
+
+    <label>حد صحة الوثيقة الأدنى:</label>
+    <div class="slidecontainer">
+  <input type="range" min="1" max="100" value="75" class="slider" id="myRange" name="precent">
+  
+</div>
+<label Id="demo"></label>
+    </div>
+    <br>
+    <button type="submit" onclick="saveInput()" id="send">تحقق</button>
+</form>
+
+    <div id="result" dir="rtl"></div>
+    
+    <script>
+        document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+
+
+    const formData = new FormData(e.target);
+
+            document.getElementById("result").innerHTML = "<p id='loading'>توثيق... ⏳</p>";
+
+            const response = await fetch("/validate", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+            const resultDiv = document.getElementById("result");
+
+            if (data.valid) {
+                let reasons = data.reasons.map(r => `<li>${r}</li>`).join('');
+                resultDiv.innerHTML = "<p class='valid'>✅ وثيقة صحيحة</p><ul>" + reasons + "</ul>";
+            } else {
+                let reasons = data.reasons.map(r => `<li>${r}</li>`).join('');
+                resultDiv.innerHTML = "<p class='invalid'>❌ وثيقة غير صحيحة</p><ul>" + reasons + "</ul>";
+            }
+        });
+    </script>
+    <script>
+    function saveInput() {
+        const inputElement = document.getElementsByName('requirements');
+        const requirements = inputElement[0].value;
+        localStorage.setItem('savedRequirements', requirements); // Save to localStorage
+    }
+
+    function displaySavedName() {
+        const savedRequirements = localStorage.getItem('savedRequirements');
+        const input = document.getElementsByName('requirements');
+        input[0].textContent = savedRequirements || ''; 
+    }
+    // Load the saved name when the page loads
+    window.onload = displaySavedName;
+    </script>
+    <script>
+    function showExtra(){
+        const extraInputs = document.getElementById('extra');
+        if (extraInputs.style.display == "block"){
+        extraInputs.style.display = "none";
+        document.getElementById('more').innerHTML = "مزيد >"
+    }
+        else{
+            extraInputs.style.display = "block";
+            document.getElementById('more').innerHTML = "مزيد v"
+    }
+    }
+    var slider = document.getElementById("myRange");
+var output = document.getElementById("demo");
+output.innerHTML = slider.value +"%"; // Display the default slider value
+
+// Update the current slider value (each time you drag the slider handle)
+slider.oninput = function() {
+  output.innerHTML = this.value + "%";
+}
+    </script>
+    <script>
+    const fileDocument = document.querySelector("#document")
+    fileDocument.addEventListener('change', (event) => {
+  const files = event.target.files;
+  
+  const feedback = document.getElementById('file1');
+  var msg = files[0].name;
+  feedback.innerHTML = msg;
+});
+    const fileValid = document.querySelector("#valid_examples")
+    fileValid.addEventListener('change', (event) => {
+  const files = event.target.files;
+  
+  const feedback = document.getElementById('file2');
+  var msg = "";
+      for(let i=0;i< files.length; i++){
+        msg = msg + files[i].name + "  ";
+    }
+  feedback.innerHTML = msg;
+});
+
+    const fileInValid = document.querySelector("#invalid_examples")
+    fileInValid.addEventListener('change', (event) => {
+  const files = event.target.files;
+  
+  const feedback = document.getElementById('file3');
+  var msg = "";
+      for(let i=0;i< files.length; i++){
+        msg = msg + files[i].name + "  ";
+    }
+  feedback.innerHTML = msg;
+});
+
+    </script>
+</body>
+
+</html>
